@@ -239,6 +239,230 @@
   font-weight: 700;
 }
 
+.home-page {
+  padding-bottom: 5rem;
+}
+
+.minecraft-server-section,
+.personal-about-section,
+.hobby-reel-section {
+  width: min(1040px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.minecraft-server-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1.25rem;
+  border: 1px solid rgba(38, 70, 50, 0.16);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(229, 244, 224, 0.9), rgba(241, 248, 233, 0.74)),
+    #edf7e9;
+}
+
+.minecraft-server-copy h2,
+.personal-about-section h2,
+.hobby-reel-heading h2 {
+  margin: 0;
+  color: #142019;
+  font-size: 2rem;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.minecraft-server-copy p:last-child,
+.personal-about-section p:last-child {
+  max-width: 720px;
+  margin: 0.8rem 0 0;
+  color: #43564b;
+  font-size: 1.04rem;
+  line-height: 1.65;
+}
+
+.minecraft-server-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.75rem;
+  padding: 0 0.9rem;
+  border: 1px solid rgba(39, 91, 57, 0.2);
+  border-radius: 8px;
+  color: #153323;
+  background: rgba(255, 255, 255, 0.68);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.minecraft-server-link:hover {
+  border-color: rgba(39, 91, 57, 0.38);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.minecraft-server-link:focus-visible,
+.hobby-reel-controls button:focus-visible,
+.hobby-phone-frame:focus-visible {
+  outline: 3px solid rgba(56, 131, 80, 0.55);
+  outline-offset: 3px;
+}
+
+.personal-about-section {
+  padding: 4rem 0 1.8rem;
+}
+
+.hobby-reel-section {
+  padding-top: 1.2rem;
+}
+
+.hobby-reel-heading {
+  margin-bottom: 1rem;
+}
+
+.hobby-reel {
+  display: grid;
+  grid-template-columns: minmax(240px, 360px) minmax(0, 1fr);
+  gap: 1.2rem;
+  align-items: center;
+}
+
+.hobby-phone-frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(360px, 100%);
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  border: 1px solid rgba(28, 48, 39, 0.16);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.94);
+  background: #244f3b;
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--photo-from) 78%, #111 22%), var(--photo-to)),
+    #244f3b;
+  box-shadow: 0 1.2rem 2rem rgba(38, 54, 43, 0.2);
+  background-position: center;
+  background-size: cover;
+  cursor: pointer;
+  touch-action: none;
+  overscroll-behavior: contain;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.hobby-phone-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.22), transparent 38%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.32), transparent 46%);
+  pointer-events: none;
+}
+
+.hobby-photo-placeholder,
+.hobby-click-hint {
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.hobby-photo-placeholder {
+  position: relative;
+  min-height: 2.35rem;
+  padding: 0 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.22);
+  font-weight: 800;
+}
+
+.hobby-click-hint {
+  position: absolute;
+  right: 0.85rem;
+  bottom: 0.85rem;
+  left: 0.85rem;
+  min-height: 2.5rem;
+  padding: 0 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(11, 14, 12, 0.44);
+  box-shadow: 0 0.7rem 1.4rem rgba(0, 0, 0, 0.18);
+  font-size: 0.9rem;
+  font-weight: 800;
+  backdrop-filter: blur(8px);
+}
+
+.hobby-phone-frame.has-photo .hobby-photo-placeholder {
+  display: none;
+}
+
+.hobby-reel-copy {
+  max-width: 520px;
+}
+
+.hobby-reel-copy > span {
+  color: #2f7244;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.hobby-reel-copy h3 {
+  margin: 0.42rem 0 0;
+  color: #142019;
+  font-size: 2.4rem;
+  line-height: 1.02;
+  letter-spacing: 0;
+}
+
+.hobby-reel-copy p {
+  margin: 0.9rem 0 0;
+  color: #465950;
+  font-size: 1.08rem;
+  line-height: 1.68;
+}
+
+.hobby-reel-copy .hobby-photo-caption {
+  max-width: 460px;
+  margin-top: 0.72rem;
+  color: #617168;
+  font-size: 0.93rem;
+  line-height: 1.55;
+}
+
+.hobby-photo-caption strong {
+  display: block;
+  margin-bottom: 0.18rem;
+  color: #2f7244;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.hobby-reel-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
+}
+
+.hobby-reel-controls button {
+  width: 2rem;
+  height: 0.55rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(37, 76, 53, 0.2);
+  cursor: pointer;
+}
+
+.hobby-reel-controls button.is-active {
+  background: #2f7244;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -863,6 +1087,44 @@
 
   .profile-links a {
     width: 100%;
+  }
+
+  .minecraft-server-section,
+  .hobby-reel {
+    grid-template-columns: 1fr;
+  }
+
+  .minecraft-server-section,
+  .personal-about-section,
+  .hobby-reel-section {
+    width: min(100% - 24px, 1040px);
+  }
+
+  .minecraft-server-link {
+    width: 100%;
+  }
+
+  .minecraft-server-copy h2,
+  .personal-about-section h2,
+  .hobby-reel-heading h2 {
+    font-size: 1.65rem;
+  }
+
+  .personal-about-section {
+    padding-top: 3rem;
+  }
+
+  .hobby-phone-frame {
+    width: min(310px, 100%);
+    justify-self: center;
+  }
+
+  .hobby-reel-copy {
+    max-width: none;
+  }
+
+  .hobby-reel-copy h3 {
+    font-size: 2rem;
   }
 
   .professional-page {
