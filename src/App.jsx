@@ -520,13 +520,13 @@ function ContactAction({ link }) {
   )
 }
 
-function SectionHeading({ icon: Icon, eyebrow, title }) {
+function SectionHeading({ icon: Icon, eyebrow, title, titleId }) {
   return (
     <div className="professional-section-heading">
       <Icon size={20} aria-hidden="true" />
       <div>
         <p>{eyebrow}</p>
-        <h2>{title}</h2>
+        <h2 id={titleId}>{title}</h2>
       </div>
     </div>
   )
@@ -589,8 +589,9 @@ function ProfessionalPage() {
                 icon={Briefcase}
                 eyebrow="Experience"
                 title="Recent Work"
+                titleId="experience-title"
               />
-              <div className="experience-list" id="experience-title">
+              <div className="experience-list">
                 {experienceItems.map((item) => (
                   <article className="experience-entry" key={item.company}>
                     <header>
@@ -627,7 +628,7 @@ function ProfessionalPage() {
 
             <section className="professional-section" aria-labelledby="projects-title">
               <SectionHeading icon={Code} eyebrow="Projects" title="Systems & Tools" />
-              <div className="project-grid" id="projects-title">
+              <div className="project-grid">
                 {projectItems.map((project) => (
                   <article className="project-card" key={project.name}>
                     <header>
@@ -657,8 +658,9 @@ function ProfessionalPage() {
                 icon={GraduationCap}
                 eyebrow="Education"
                 title="University of British Columbia"
+                titleId="education-title"
               />
-              <div className="education-block" id="education-title">
+              <div className="education-block">
                 <p>BSc, Computer Science</p>
                 <span>Sep 2023 - Nov 2027</span>
                 <ul>
@@ -672,7 +674,7 @@ function ProfessionalPage() {
 
             <section className="professional-panel" aria-labelledby="skills-title">
               <SectionHeading icon={Wrench} eyebrow="Technical Skills" title="Stack" />
-              <div className="skill-group-list" id="skills-title">
+              <div className="skill-group-list">
                 {skillGroups.map((group) => (
                   <div className="skill-group" key={group.label}>
                     <h3>{group.label}</h3>
@@ -691,8 +693,9 @@ function ProfessionalPage() {
                 icon={Package}
                 eyebrow="Minecraft"
                 title="Mods & Server Projects"
+                titleId="minecraft-title"
               />
-              <p className="panel-copy" id="minecraft-title">
+              <p className="panel-copy">
                 I build server-side Fabric mods and run SMP projects where
                 friends make practical, funny builds, including recreating
                 offices we have worked in.
