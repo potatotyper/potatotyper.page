@@ -154,88 +154,59 @@ const skillGroups = [
   },
 ]
 
-// Replace each empty image string with a public asset path, like /assets/hobbies/golf-1.jpg.
+const hobbyPhotoPath = (folder, fileName) => (
+  `/assets/${folder}/${encodeURIComponent(fileName)}`
+)
+
+const golfPhotoFiles = [
+  'WhatsApp Image 2026-05-04 at 6.35.40 PM (4).jpeg',
+  'WhatsApp Image 2026-05-04 at 7.27.56 PM.jpeg',
+  'WhatsApp Image 2026-05-04 at 7.27.574 PM.jpeg',
+  'WhatsApp Image 2026-05-04 at 6.35.40 PM (3).jpeg',
+  'WhatsApp Image 2026-05-04 at 7.27.573 PM.jpeg',
+  'WhatsApp Image 2026-05-04 at 7.27.561 PM.jpeg',
+  'WhatsApp Image 2026-05-04 at 6.35.40 PM (2).jpeg',
+  'WhatsApp Image 2026-05-04 at 6.35.40 PM (6).jpeg',
+  'WhatsApp Image 2026-05-04 at 6.35.41 PM.jpeg',
+  'WhatsApp Image 2026-05-04 at 6.35.41 PM (2).jpeg',
+  'WhatsApp Image 2026-05-04 at 6.35.40 PM (5).jpeg',
+  'WhatsApp Image 2026-05-04 at 7.27.572 PM.jpeg',
+  'WhatsApp Image 2026-05-04 at 6.35.41 PM (1).jpeg',
+]
+
+const snowboardPhotoFiles = [
+  'WhatsApp Image 2026-05-04 at 6.35.41 PM (8).jpeg',
+  'WhatsApp Image 2026-05-04 at 6.35.41 PM (9).jpeg',
+  'WhatsApp Image 2026-05-04 at 6.35.41 PM (6).jpeg',
+  'WhatsApp Image 2026-05-04 at 6.35.41 PM (4).jpeg',
+  'WhatsApp Image 2026-05-04 at 6.35.41 PM (3).jpeg',
+  'WhatsApp Image 2026-05-04 at 6.35.41 PM (7).jpeg',
+  'XLast.jpeg',
+]
+
 const hobbyReelItems = [
   {
     title: 'Golf',
     description:
-      'Quiet fairways, small swing fixes, and the exact sort of patience-building hobby that makes debugging feel weirdly familiar.',
+      'I usually play in the municipals in Vancouver, though I also frequent the driving range in Musqueam. Not that good of a golfer, but I really enjoy it. \n Message me on linkedin! I\'m down to teach or play with anyone :)',
     colors: ['#2f7244', '#d6e69f'],
-    photos: [
-      {
-        image: '',
-        placeholder: 'Golf photo 1',
-        imageAlt: 'James playing golf',
-        caption: 'A placeholder for a course photo, range session, or favorite golf moment.',
-      },
-      {
-        image: '',
-        placeholder: 'Golf photo 2',
-        imageAlt: 'Golf bag or fairway view',
-        caption: 'Swap this for another golf shot when you want a second image in the reel.',
-      },
-    ],
+    photos: golfPhotoFiles.map((fileName, index) => ({
+      image: hobbyPhotoPath('golf', fileName),
+      placeholder: `Golf photo ${index + 1}`,
+      imageAlt: 'playing golf',
+    })),
   },
   {
     title: 'Snowboarding',
     description:
-      'When winter shows up, I like getting out to the mountain, chasing cleaner turns, and earning the post-snow food nap.',
+      'Beginner boarder, but I’ve already committed to the bit with a Seymour season pass for next season. :)',
     colors: ['#2d5f83', '#d9edf7'],
-    photos: [
-      {
-        image: '',
-        placeholder: 'Snowboarding photo 1',
-        imageAlt: 'James snowboarding',
-        caption: 'A placeholder for a mountain day, lift photo, or snowy action shot.',
-      },
-      {
-        image: '',
-        placeholder: 'Snowboarding photo 2',
-        imageAlt: 'Snowboarding trip view',
-        caption: 'Use this for another snowboarding memory or a landscape from the trip.',
-      },
-    ],
-  },
-  {
-    title: 'Swimming',
-    description:
-      'Swimming is my reset button: low noise, steady rhythm, and enough laps to make the rest of the day feel lighter.',
-    colors: ['#1b7280', '#b5edf2'],
-    photos: [
-      {
-        image: '',
-        placeholder: 'Swimming photo 1',
-        imageAlt: 'James swimming',
-        caption: 'A placeholder for a pool, beach, or post-swim photo.',
-      },
-      {
-        image: '',
-        placeholder: 'Swimming photo 2',
-        imageAlt: 'Swimming location',
-        caption: 'Swap this for another swimming-related image when you have one ready.',
-      },
-    ],
-  },
-  {
-    title: 'Minecraft Builds',
-    description:
-      'On the SMP, friends make fun builds together, including trying to rebuild offices we worked in before. DM me on LinkedIn if you want to join.',
-    colors: ['#6d5130', '#95bd70'],
-    photos: [
-      {
-        image: '',
-        placeholder: 'Minecraft server photo 1',
-        imageAlt: 'Minecraft server build',
-        caption: 'A placeholder for a favorite SMP build or recreated office project.',
-      },
-      {
-        image: '',
-        placeholder: 'Minecraft server photo 2',
-        imageAlt: 'Minecraft group build',
-        caption: 'Use this for another server screenshot, group project, or funny build.',
-      },
-    ],
-  },
+    photos: snowboardPhotoFiles.map((fileName, index) => ({
+      image: hobbyPhotoPath('snowboard', fileName),
+      placeholder: `Snowboarding photo ${index + 1}`,
+      imageAlt: 'snowboarding',
+    })),
+  }
 ]
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
@@ -743,7 +714,9 @@ function MinecraftLandingPage() {
 
 function HomePage() {
   const [activeHobbyIndex, setActiveHobbyIndex] = useState(0)
-  const [activePhotoIndex, setActivePhotoIndex] = useState(0)
+  const [photoIndices, setPhotoIndices] = useState(() => (
+    hobbyReelItems.map(() => 0)
+  ))
   const hobbyFrameRef = useRef(null)
   const wheelLockRef = useRef(false)
   const hobbySwipeRef = useRef({
@@ -753,11 +726,12 @@ function HomePage() {
   })
   const didHobbySwipeRef = useRef(false)
   const activeHobby = hobbyReelItems[activeHobbyIndex]
+  const activePhotoCount = activeHobby.photos.length
+  const activePhotoIndex = photoIndices[activeHobbyIndex] ?? 0
   const activePhoto =
-    activeHobby.photos[activePhotoIndex % activeHobby.photos.length]
+    activeHobby.photos[activePhotoIndex % activePhotoCount]
 
   const moveHobby = useCallback((direction) => {
-    setActivePhotoIndex(0)
     setActiveHobbyIndex((currentIndex) => {
       const nextIndex =
         (currentIndex + direction + hobbyReelItems.length) % hobbyReelItems.length
@@ -767,17 +741,20 @@ function HomePage() {
   }, [])
 
   const selectHobby = (index) => {
-    setActivePhotoIndex(0)
     setActiveHobbyIndex(index)
   }
 
-  const showNextPhoto = () => {
-    setActivePhotoIndex((currentIndex) => (
-      currentIndex + 1
-    ) % activeHobby.photos.length)
-  }
+  const movePhoto = useCallback((direction) => {
+    setPhotoIndices((currentIndices) => {
+      const nextIndices = [...currentIndices]
+      const currentIndex = currentIndices[activeHobbyIndex] ?? 0
+      nextIndices[activeHobbyIndex] =
+        (currentIndex + direction + activePhotoCount) % activePhotoCount
+      return nextIndices
+    })
+  }, [activeHobbyIndex, activePhotoCount])
 
-  const completeHobbySwipe = useCallback((startX, startY, endX, endY) => {
+  const completePhotoSwipe = useCallback((startX, startY, endX, endY) => {
     const deltaX = endX - startX
     const deltaY = endY - startY
     const absX = Math.abs(deltaX)
@@ -786,14 +763,14 @@ function HomePage() {
     if (Math.max(absX, absY) < HOBBY_SWIPE_THRESHOLD) return false
 
     didHobbySwipeRef.current = true
-    moveHobby(absY > absX ? (deltaY < 0 ? 1 : -1) : (deltaX < 0 ? 1 : -1))
+    movePhoto(absY > absX ? (deltaY < 0 ? 1 : -1) : (deltaX < 0 ? 1 : -1))
 
     window.setTimeout(() => {
       didHobbySwipeRef.current = false
     }, 180)
 
     return true
-  }, [moveHobby])
+  }, [movePhoto])
 
   useEffect(() => {
     const frame = hobbyFrameRef.current
@@ -840,7 +817,7 @@ function HomePage() {
       touchSwipe.active = false
 
       if (
-        completeHobbySwipe(
+        completePhotoSwipe(
           touchSwipe.startX,
           touchSwipe.startY,
           endX,
@@ -867,15 +844,22 @@ function HomePage() {
       frame.removeEventListener('touchend', handleTouchEnd)
       frame.removeEventListener('touchcancel', handleTouchCancel)
     }
-  }, [completeHobbySwipe])
+  }, [completePhotoSwipe])
 
   const handleHobbyWheel = (event) => {
     event.preventDefault()
 
     if (wheelLockRef.current) return
 
+    const delta =
+      Math.abs(event.deltaY) >= Math.abs(event.deltaX)
+        ? event.deltaY
+        : event.deltaX
+
+    if (delta === 0) return
+
     wheelLockRef.current = true
-    moveHobby(event.deltaY > 0 ? 1 : -1)
+    movePhoto(delta > 0 ? 1 : -1)
     window.setTimeout(() => {
       wheelLockRef.current = false
     }, 420)
@@ -884,13 +868,13 @@ function HomePage() {
   const handleHobbyKeyDown = (event) => {
     if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
       event.preventDefault()
-      moveHobby(1)
+      movePhoto(1)
     } else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
       event.preventDefault()
-      moveHobby(-1)
+      movePhoto(-1)
     } else if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
-      showNextPhoto()
+      moveHobby(1)
     }
   }
 
@@ -915,7 +899,7 @@ function HomePage() {
 
     hobbySwipeRef.current.pointerId = null
 
-    completeHobbySwipe(
+    completePhotoSwipe(
       swipe.startX,
       swipe.startY,
       event.clientX,
@@ -929,7 +913,7 @@ function HomePage() {
       return
     }
 
-    showNextPhoto()
+    moveHobby(1)
   }
 
   return (
@@ -976,16 +960,6 @@ function HomePage() {
           </a>
         </section>
 
-        <section className="personal-about-section">
-          <p className="eyebrow">About me</p>
-          <h2>Outside code, I like hobbies that get me moving.</h2>
-          <p>
-            I like to play golf, go snowboarding, and go swimming. The common
-            thread is probably that each one gives me a different way to reset:
-            focus, speed, and rhythm.
-          </p>
-        </section>
-
         <section className="hobby-reel-section" aria-labelledby="hobbies-title">
           <div className="hobby-reel-heading">
             <p className="eyebrow">Hobbies</p>
@@ -1006,17 +980,17 @@ function HomePage() {
               onKeyDown={handleHobbyKeyDown}
               role="button"
               tabIndex={0}
-              aria-label={`${activePhoto.imageAlt}. Swipe to change hobbies, or click for more images.`}
+              aria-label={`${activePhoto.imageAlt}. Scroll to change photos, or click to view other hobbies.`}
               style={{
                 '--photo-from': activeHobby.colors[0],
                 '--photo-to': activeHobby.colors[1],
                 backgroundImage: activePhoto.image
-                  ? `url(${activePhoto.image})`
+                  ? `url("${activePhoto.image}")`
                   : undefined,
               }}
             >
               <span className="hobby-photo-placeholder">{activePhoto.placeholder}</span>
-              <span className="hobby-click-hint">Click me for more images</span>
+              <span className="hobby-click-hint">Click me to view other hobbies</span>
             </div>
 
             <div className="hobby-reel-copy">
