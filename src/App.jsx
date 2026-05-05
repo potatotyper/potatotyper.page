@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
   Briefcase,
@@ -23,7 +23,11 @@ import {
 import './App.css'
 
 const PANORAMA_IMAGE = '/assets/pano.jpg'
-const HOBBY_SWIPE_THRESHOLD = 46
+const PROFILE_IMAGE = '/assets/icon/profilepic.jpeg'
+const HOBBY_REEL_CENTER_PANEL = 1
+const HOBBY_REEL_SCROLL_SETTLE_MS = 280
+const HOBBY_HORIZONTAL_SWIPE_THRESHOLD = 56
+const HOBBY_HORIZONTAL_SWIPE_DOMINANCE = 1.2
 
 const profileLinks = [
   {
@@ -512,13 +516,58 @@ function PanoramaIntro({ onEnterHome }) {
 }
 
 function SiteShell({ children, variant = 'light' }) {
+  const navRef = useRef(null)
+  const navToggleRef = useRef(null)
+  const [isNavCollapsed, setIsNavCollapsed] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+  useLayoutEffect(() => {
+    const nav = navRef.current
+    if (!nav) return undefined
+
+    const updateNavLayout = () => {
+      const firstLink = nav.querySelector('a')
+      if (!firstLink) return
+
+      const linkHeight = firstLink.getBoundingClientRect().height
+      const isWrapped = nav.scrollHeight > linkHeight + 4
+      setIsNavCollapsed(isWrapped)
+      if (!isWrapped) {
+        setIsMenuOpen(false)
+      }
+    }
+
+    updateNavLayout()
+    window.addEventListener('resize', updateNavLayout)
+
+    return () => {
+      window.removeEventListener('resize', updateNavLayout)
+    }
+  }, [])
+
   return (
     <div className={`site-shell ${variant === 'dark' ? 'site-shell-dark' : ''}`}>
-      <header className="site-header">
-        <Link className="brand" to="/" aria-label="Potatotyper landing">
-          Potatotyper
-        </Link>
-        <nav className="site-nav" aria-label="Primary navigation">
+      <header
+        className={`site-header ${isNavCollapsed ? 'is-collapsed' : ''} ${
+          isMenuOpen ? 'is-open' : ''
+        }`}
+      >
+        <div className="site-header-left">
+          <Link className="brand" to="/" aria-label="Potatotyper landing">
+            Potatotyper
+          </Link>
+          <button
+            type="button"
+            className="site-nav-toggle"
+            ref={navToggleRef}
+            onClick={() => setIsMenuOpen((current) => !current)}
+            aria-expanded={isMenuOpen}
+            aria-controls="site-nav"
+          >
+            Menu
+          </button>
+        </div>
+        <nav className="site-nav" id="site-nav" ref={navRef} aria-label="Primary navigation">
           <NavLink to="/home">
             <HomeIcon size={18} aria-hidden="true" />
             Home
@@ -570,13 +619,23 @@ function ProfessionalPage() {
       <section className="professional-page professional-recap-page">
         <section className="professional-readme-hero" aria-labelledby="professional-title">
           <p className="professional-eyebrow">Hello, I am a CS TA & Software Engineer</p>
-          <h1 id="professional-title">James Johnson Tjhin</h1>
-          <p className="professional-lede">
-            Currently teaching and studying Computer Science at UBC and building
-            performant systems at SAP. When I am not coding or teaching
-            low-level programming, I am probably building Minecraft mods or
-            hanging out on my SMP server.
-          </p>
+          <div className="title-with-avatar">
+            <img
+              className="profile-avatar"
+              src={PROFILE_IMAGE}
+              alt="James Johnson Tjhin profile photo"
+              loading="eager"
+            />
+            <div className="title-stack">
+              <h1 id="professional-title">James Johnson Tjhin</h1>
+              <p className="professional-lede">
+                Currently teaching and studying Computer Science at UBC and building
+                performant systems at SAP. When I am not coding or teaching
+                low-level programming, I am probably building Minecraft mods or
+                hanging out on my SMP server.
+              </p>
+            </div>
+          </div>
           <div className="professional-contact-list" aria-label="Contact links">
             {contactLinks.map((link) => (
               <ContactAction key={link.label} link={link} />
@@ -701,6 +760,25 @@ function ProfessionalPage() {
             </div>
           </div>
         </section>
+
+        <section className="professional-fun-mode" aria-labelledby="fun-mode-title">
+          <p className="professional-eyebrow">You made it</p>
+          <h2 id="fun-mode-title">Thank you for reading to the end.</h2>
+          <p>
+            Reach out to me via{' '}
+            <a href="https://www.linkedin.com/in/james-johnson-tjhin/" target="_blank" rel="noreferrer">
+              LinkedIn
+            </a>{' '}
+            or{' '}
+            <a href="mailto:jamesj.tjhin@gmail.com">
+              email
+            </a>
+            .
+          </p>
+          <Link className="fun-mode-link" to="/">
+            Fun Mode
+          </Link>
+        </section>
       </section>
     </SiteShell>
   )
@@ -712,37 +790,120 @@ function MinecraftLandingPage() {
   return <PanoramaIntro onEnterHome={() => navigate('/home')} />
 }
 
+function HobbyPhotoPanel({ photo, isLoaded, isCurrent = false, onLoad }) {
+  return (
+    <figure className={`hobby-photo-panel ${isLoaded ? 'is-loaded' : ''}`}>
+      {!isLoaded && <span className="hobby-photo-buffer" aria-hidden="true" />}
+      <img
+        src={photo.image}
+        alt={isCurrent ? photo.imageAlt : ''}
+        loading="eager"
+        decoding="async"
+        onLoad={() => onLoad(photo.image)}
+      />
+    </figure>
+  )
+}
+
 function HomePage() {
   const [activeHobbyIndex, setActiveHobbyIndex] = useState(0)
   const [photoIndices, setPhotoIndices] = useState(() => (
     hobbyReelItems.map(() => 0)
   ))
+  const [loadedPhotoImages, setLoadedPhotoImages] = useState(() => ({}))
+  const [hobbyDragOffset, setHobbyDragOffset] = useState(0)
+  const [hobbySlideDirection, setHobbySlideDirection] = useState(0)
+  const [hobbyRailMode, setHobbyRailMode] = useState('idle')
   const hobbyFrameRef = useRef(null)
-  const wheelLockRef = useRef(false)
+  const hobbyScrollRef = useRef(null)
+  const isRecenteringReelRef = useRef(false)
+  const scrollSettleTimerRef = useRef(0)
+  const hobbyReturnTimerRef = useRef(0)
   const hobbySwipeRef = useRef({
     pointerId: null,
     startX: 0,
     startY: 0,
+    isHorizontalSwipe: false,
   })
-  const didHobbySwipeRef = useRef(false)
+  const isHobbyRailMoving = hobbyRailMode !== 'idle'
   const activeHobby = hobbyReelItems[activeHobbyIndex]
   const activePhotoCount = activeHobby.photos.length
   const activePhotoIndex = photoIndices[activeHobbyIndex] ?? 0
   const activePhoto =
     activeHobby.photos[activePhotoIndex % activePhotoCount]
+  const previousPhotoIndex =
+    (activePhotoIndex - 1 + activePhotoCount) % activePhotoCount
+  const nextPhotoIndex = (activePhotoIndex + 1) % activePhotoCount
+  const reelPhotos = [
+    {
+      position: -1,
+      photo: activeHobby.photos[previousPhotoIndex],
+    },
+    {
+      position: 0,
+      photo: activePhoto,
+    },
+    {
+      position: 1,
+      photo: activeHobby.photos[nextPhotoIndex],
+    },
+  ]
+  const hobbyPanelItems = [-1, 0, 1].map((position) => {
+    const hobbyIndex =
+      (activeHobbyIndex + position + hobbyReelItems.length) % hobbyReelItems.length
+    const hobby = hobbyReelItems[hobbyIndex]
+    const photoIndex = photoIndices[hobbyIndex] ?? 0
+    const photo = hobby.photos[photoIndex % hobby.photos.length]
+
+    return {
+      hobby,
+      hobbyIndex,
+      photo,
+      position,
+    }
+  })
+
+  const selectHobby = (index) => {
+    setHobbyDragOffset(0)
+    setHobbySlideDirection(0)
+    setHobbyRailMode('idle')
+    setActiveHobbyIndex(index)
+  }
 
   const moveHobby = useCallback((direction) => {
-    setActiveHobbyIndex((currentIndex) => {
-      const nextIndex =
-        (currentIndex + direction + hobbyReelItems.length) % hobbyReelItems.length
+    setActiveHobbyIndex((currentIndex) => (
+      (currentIndex + direction + hobbyReelItems.length) % hobbyReelItems.length
+    ))
+  }, [])
 
-      return nextIndex
+  const markPhotoLoaded = useCallback((image) => {
+    setLoadedPhotoImages((currentImages) => {
+      if (currentImages[image]) return currentImages
+
+      return {
+        ...currentImages,
+        [image]: true,
+      }
     })
   }, [])
 
-  const selectHobby = (index) => {
-    setActiveHobbyIndex(index)
-  }
+  const recenterHobbyReel = useCallback(() => {
+    const scrollElement = hobbyScrollRef.current
+
+    if (!scrollElement) return
+
+    isRecenteringReelRef.current = true
+    const previousScrollBehavior = scrollElement.style.scrollBehavior
+    scrollElement.style.scrollBehavior = 'auto'
+    scrollElement.scrollTop = scrollElement.clientHeight * HOBBY_REEL_CENTER_PANEL
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        scrollElement.style.scrollBehavior = previousScrollBehavior
+        isRecenteringReelRef.current = false
+      })
+    })
+  }, [])
 
   const movePhoto = useCallback((direction) => {
     setPhotoIndices((currentIndices) => {
@@ -754,179 +915,230 @@ function HomePage() {
     })
   }, [activeHobbyIndex, activePhotoCount])
 
-  const completePhotoSwipe = useCallback((startX, startY, endX, endY) => {
-    const deltaX = endX - startX
-    const deltaY = endY - startY
-    const absX = Math.abs(deltaX)
-    const absY = Math.abs(deltaY)
+  useLayoutEffect(() => {
+    recenterHobbyReel()
+  }, [activeHobbyIndex, activePhotoIndex, recenterHobbyReel])
 
-    if (Math.max(absX, absY) < HOBBY_SWIPE_THRESHOLD) return false
+  useEffect(() => () => {
+    window.clearTimeout(scrollSettleTimerRef.current)
+    window.clearTimeout(hobbyReturnTimerRef.current)
+  }, [])
 
-    didHobbySwipeRef.current = true
-    movePhoto(absY > absX ? (deltaY < 0 ? 1 : -1) : (deltaX < 0 ? 1 : -1))
+  const handleHobbyScroll = useCallback(() => {
+    if (isRecenteringReelRef.current) return
 
-    window.setTimeout(() => {
-      didHobbySwipeRef.current = false
-    }, 180)
+    window.clearTimeout(scrollSettleTimerRef.current)
+    scrollSettleTimerRef.current = window.setTimeout(() => {
+      const scrollElement = hobbyScrollRef.current
 
-    return true
-  }, [movePhoto])
+      if (!scrollElement || isRecenteringReelRef.current) return
 
-  useEffect(() => {
-    const frame = hobbyFrameRef.current
-    if (!frame) return undefined
+      const panelHeight = scrollElement.clientHeight || 1
+      const snappedPanel = Math.round(scrollElement.scrollTop / panelHeight)
 
-    const touchSwipe = {
-      active: false,
+      if (snappedPanel < HOBBY_REEL_CENTER_PANEL) {
+        movePhoto(-1)
+      } else if (snappedPanel > HOBBY_REEL_CENTER_PANEL) {
+        movePhoto(1)
+      } else {
+        recenterHobbyReel()
+      }
+    }, HOBBY_REEL_SCROLL_SETTLE_MS)
+  }, [movePhoto, recenterHobbyReel])
+
+  const scrollToAdjacentPhoto = useCallback((direction) => {
+    const scrollElement = hobbyScrollRef.current
+
+    if (!scrollElement) return
+
+    scrollElement.scrollTo({
+      top: scrollElement.clientHeight * (direction > 0 ? 2 : 0),
+      behavior: 'smooth',
+    })
+  }, [])
+
+  const startHobbySlide = useCallback((direction) => {
+    window.clearTimeout(hobbyReturnTimerRef.current)
+    setHobbyDragOffset(0)
+    setHobbySlideDirection(direction > 0 ? 1 : -1)
+    setHobbyRailMode('sliding')
+  }, [])
+
+  const handleHobbyRailTransitionEnd = (event) => {
+    if (event.target !== event.currentTarget || event.propertyName !== 'transform') {
+      return
+    }
+
+    window.clearTimeout(hobbyReturnTimerRef.current)
+
+    if (hobbyRailMode === 'sliding') {
+      moveHobby(hobbySlideDirection)
+    }
+
+    setHobbyDragOffset(0)
+    setHobbySlideDirection(0)
+    setHobbyRailMode('idle')
+  }
+
+  const returnHobbyRailToCenter = useCallback(() => {
+    window.clearTimeout(hobbyReturnTimerRef.current)
+    setHobbyRailMode('returning')
+    setHobbyDragOffset(0)
+    hobbyReturnTimerRef.current = window.setTimeout(() => {
+      setHobbyRailMode((currentMode) => (
+        currentMode === 'returning' ? 'idle' : currentMode
+      ))
+    }, 380)
+  }, [])
+
+  const resetHobbySwipe = useCallback(() => {
+    hobbySwipeRef.current = {
+      pointerId: null,
       startX: 0,
       startY: 0,
-      lastX: 0,
-      lastY: 0,
+      isHorizontalSwipe: false,
     }
-
-    const handleTouchStart = (event) => {
-      if (event.touches.length !== 1) return
-
-      const touch = event.touches[0]
-      touchSwipe.active = true
-      touchSwipe.startX = touch.clientX
-      touchSwipe.startY = touch.clientY
-      touchSwipe.lastX = touch.clientX
-      touchSwipe.lastY = touch.clientY
-      didHobbySwipeRef.current = false
-    }
-
-    const handleTouchMove = (event) => {
-      if (!touchSwipe.active || event.touches.length !== 1) return
-
-      const touch = event.touches[0]
-      touchSwipe.lastX = touch.clientX
-      touchSwipe.lastY = touch.clientY
-
-      if (event.cancelable) {
-        event.preventDefault()
-      }
-    }
-
-    const handleTouchEnd = (event) => {
-      if (!touchSwipe.active) return
-
-      const touch = event.changedTouches[0]
-      const endX = touch?.clientX ?? touchSwipe.lastX
-      const endY = touch?.clientY ?? touchSwipe.lastY
-      touchSwipe.active = false
-
-      if (
-        completePhotoSwipe(
-          touchSwipe.startX,
-          touchSwipe.startY,
-          endX,
-          endY,
-        ) &&
-        event.cancelable
-      ) {
-        event.preventDefault()
-      }
-    }
-
-    const handleTouchCancel = () => {
-      touchSwipe.active = false
-    }
-
-    frame.addEventListener('touchstart', handleTouchStart, { passive: true })
-    frame.addEventListener('touchmove', handleTouchMove, { passive: false })
-    frame.addEventListener('touchend', handleTouchEnd, { passive: false })
-    frame.addEventListener('touchcancel', handleTouchCancel)
-
-    return () => {
-      frame.removeEventListener('touchstart', handleTouchStart)
-      frame.removeEventListener('touchmove', handleTouchMove)
-      frame.removeEventListener('touchend', handleTouchEnd)
-      frame.removeEventListener('touchcancel', handleTouchCancel)
-    }
-  }, [completePhotoSwipe])
-
-  const handleHobbyWheel = (event) => {
-    event.preventDefault()
-
-    if (wheelLockRef.current) return
-
-    const delta =
-      Math.abs(event.deltaY) >= Math.abs(event.deltaX)
-        ? event.deltaY
-        : event.deltaX
-
-    if (delta === 0) return
-
-    wheelLockRef.current = true
-    movePhoto(delta > 0 ? 1 : -1)
-    window.setTimeout(() => {
-      wheelLockRef.current = false
-    }, 420)
-  }
-
-  const handleHobbyKeyDown = (event) => {
-    if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
-      event.preventDefault()
-      movePhoto(1)
-    } else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
-      event.preventDefault()
-      movePhoto(-1)
-    } else if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      moveHobby(1)
-    }
-  }
+  }, [])
 
   const handleHobbyPointerDown = (event) => {
-    if (event.pointerType === 'touch') return
+    if (isHobbyRailMoving) return
+    if (event.pointerType === 'mouse' && event.button !== 0) return
 
     hobbySwipeRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
+      isHorizontalSwipe: false,
     }
-    didHobbySwipeRef.current = false
-    event.currentTarget.setPointerCapture?.(event.pointerId)
+
+    if (event.pointerType === 'mouse') {
+      event.currentTarget.setPointerCapture?.(event.pointerId)
+      event.preventDefault()
+    }
   }
 
-  const handleHobbyPointerUp = (event) => {
-    if (event.pointerType === 'touch') return
-
+  const handleHobbyPointerMove = (event) => {
     const swipe = hobbySwipeRef.current
 
     if (event.pointerId !== swipe.pointerId) return
 
-    hobbySwipeRef.current.pointerId = null
+    if (event.pointerType === 'mouse' && event.buttons !== 1) {
+      if (swipe.isHorizontalSwipe) {
+        returnHobbyRailToCenter()
+      }
 
-    completePhotoSwipe(
-      swipe.startX,
-      swipe.startY,
-      event.clientX,
-      event.clientY,
-    )
-  }
-
-  const handleHobbyPhotoClick = () => {
-    if (didHobbySwipeRef.current) {
-      didHobbySwipeRef.current = false
+      resetHobbySwipe()
       return
     }
 
-    moveHobby(1)
+    const deltaX = event.clientX - swipe.startX
+    const deltaY = event.clientY - swipe.startY
+    const absX = Math.abs(deltaX)
+    const absY = Math.abs(deltaY)
+
+    if (swipe.isHorizontalSwipe) {
+      const frameWidth = hobbyFrameRef.current?.clientWidth || 1
+      setHobbyDragOffset(clamp(deltaX, -frameWidth, frameWidth))
+      return
+    }
+
+    if (
+      absX > 18 &&
+      absX > absY * HOBBY_HORIZONTAL_SWIPE_DOMINANCE
+    ) {
+      swipe.isHorizontalSwipe = true
+      setHobbyDragOffset(deltaX)
+    }
   }
+
+  const handleHobbyPointerUp = (event) => {
+    const swipe = hobbySwipeRef.current
+
+    if (event.pointerId !== swipe.pointerId) return
+
+    const deltaX = event.clientX - swipe.startX
+    const deltaY = event.clientY - swipe.startY
+    const absX = Math.abs(deltaX)
+    const absY = Math.abs(deltaY)
+
+    if (
+      swipe.isHorizontalSwipe &&
+      absX >= HOBBY_HORIZONTAL_SWIPE_THRESHOLD &&
+      absX > absY * HOBBY_HORIZONTAL_SWIPE_DOMINANCE
+    ) {
+      startHobbySlide(deltaX < 0 ? 1 : -1)
+    } else if (swipe.isHorizontalSwipe) {
+      returnHobbyRailToCenter()
+    }
+
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture?.(event.pointerId)
+    }
+    resetHobbySwipe()
+  }
+
+  const handleHobbyPointerCancel = (event) => {
+    const swipe = hobbySwipeRef.current
+
+    if (event.pointerId === swipe.pointerId && swipe.isHorizontalSwipe) {
+      returnHobbyRailToCenter()
+    }
+
+    resetHobbySwipe()
+  }
+
+  const handleHobbyLostPointerCapture = (event) => {
+    const swipe = hobbySwipeRef.current
+
+    if (event.pointerId === swipe.pointerId && swipe.isHorizontalSwipe) {
+      returnHobbyRailToCenter()
+    }
+
+    resetHobbySwipe()
+  }
+
+  const handleHobbyKeyDown = (event) => {
+    if (event.key === 'ArrowDown' || event.key === 'PageDown') {
+      event.preventDefault()
+      scrollToAdjacentPhoto(1)
+    } else if (event.key === 'ArrowUp' || event.key === 'PageUp') {
+      event.preventDefault()
+      scrollToAdjacentPhoto(-1)
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault()
+      startHobbySlide(1)
+    } else if (event.key === 'ArrowLeft') {
+      event.preventDefault()
+      startHobbySlide(-1)
+    }
+  }
+
+  const hobbyRailTransform = (() => {
+    if (hobbyRailMode === 'sliding') {
+      return `translate3d(${hobbySlideDirection > 0 ? '-200%' : '0%'}, 0, 0)`
+    }
+
+    return `translate3d(calc(-100% + ${hobbyDragOffset}px), 0, 0)`
+  })()
 
   return (
     <SiteShell>
       <div className="home-page reveal-content">
         <section className="home-brief">
           <p className="eyebrow">Personal site</p>
-          <h1>Hi, I am building things that feel useful, playful, and mine.</h1>
-          <p className="brief-copy">
-            This is a starter home for my projects, professional work, Minecraft
-            ideas, and experiments. The details are placeholders for now, but the
-            panorama knows the way in.
-          </p>
+          <div className="title-with-avatar">
+            <img
+              className="profile-avatar"
+              src={PROFILE_IMAGE}
+              alt="James Johnson Tjhin profile photo"
+              loading="eager"
+            />
+            <h1>Hi, I'm James.</h1>
+            <p className="brief-copy">
+              This is a starter home for my hobbies, projects, and experiments.
+              More always on the way!
+            </p>
+          </div>
           <div className="profile-links" aria-label="Profile links">
             {profileLinks.map(({ label, href, icon: Icon }) => (
               <a key={label} href={href} target="_blank" rel="noreferrer">
@@ -948,16 +1160,21 @@ function HomePage() {
               If that sounds like your kind of chaos, DM me on LinkedIn to join.
             </p>
           </div>
-          <a
-            className="minecraft-server-link"
-            href="https://www.linkedin.com/in/james-johnson-tjhin/"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <Network size={20} aria-hidden="true" />
-            Message me on LinkedIn
-            <ExternalLink size={16} aria-hidden="true" />
-          </a>
+          <div className="minecraft-server-actions">
+            <a
+              className="minecraft-server-link"
+              href="https://www.linkedin.com/in/james-johnson-tjhin/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Network size={20} aria-hidden="true" />
+              Message me on LinkedIn
+              <ExternalLink size={16} aria-hidden="true" />
+            </a>
+            <Link className="minecraft-server-link is-secondary" to="/">
+              View Panorama
+            </Link>
+          </div>
         </section>
 
         <section className="hobby-reel-section" aria-labelledby="hobbies-title">
@@ -969,28 +1186,68 @@ function HomePage() {
           <div className="hobby-reel">
             <div
               ref={hobbyFrameRef}
-              className={`hobby-phone-frame ${activePhoto.image ? 'has-photo' : ''}`}
-              onWheel={handleHobbyWheel}
+              className="hobby-phone-frame has-photo"
               onPointerDown={handleHobbyPointerDown}
+              onPointerMove={handleHobbyPointerMove}
               onPointerUp={handleHobbyPointerUp}
-              onPointerCancel={() => {
-                hobbySwipeRef.current.pointerId = null
-              }}
-              onClick={handleHobbyPhotoClick}
-              onKeyDown={handleHobbyKeyDown}
-              role="button"
-              tabIndex={0}
-              aria-label={`${activePhoto.imageAlt}. Scroll to change photos, or click to view other hobbies.`}
+              onPointerCancel={handleHobbyPointerCancel}
+              onLostPointerCapture={handleHobbyLostPointerCapture}
               style={{
                 '--photo-from': activeHobby.colors[0],
                 '--photo-to': activeHobby.colors[1],
-                backgroundImage: activePhoto.image
-                  ? `url("${activePhoto.image}")`
-                  : undefined,
               }}
             >
-              <span className="hobby-photo-placeholder">{activePhoto.placeholder}</span>
-              <span className="hobby-click-hint">Click me to view other hobbies</span>
+              <div
+                className={`hobby-hobby-rail is-${hobbyRailMode}`}
+                onTransitionEnd={handleHobbyRailTransitionEnd}
+                style={{ transform: hobbyRailTransform }}
+              >
+                {hobbyPanelItems.map(({ hobby, hobbyIndex, photo, position }) => (
+                  <div
+                    className="hobby-hobby-panel"
+                    key={`${hobby.title}-${position}`}
+                    style={{
+                      '--photo-from': hobby.colors[0],
+                      '--photo-to': hobby.colors[1],
+                    }}
+                  >
+                    {position === 0 ? (
+                      <div
+                        ref={hobbyScrollRef}
+                        className="hobby-photo-scroll"
+                        onScroll={handleHobbyScroll}
+                        onKeyDown={handleHobbyKeyDown}
+                        role="region"
+                        tabIndex={0}
+                        aria-label={`${activePhoto.imageAlt}. Scroll vertically to change photos. Swipe left or right to change hobbies.`}
+                      >
+                        {reelPhotos.map(({ photo: reelPhoto, position: reelPosition }) => (
+                          <HobbyPhotoPanel
+                            key={`${reelPhoto.image}-${reelPosition}`}
+                            photo={reelPhoto}
+                            isLoaded={Boolean(loadedPhotoImages[reelPhoto.image])}
+                            isCurrent={reelPosition === 0}
+                            onLoad={markPhotoLoaded}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div
+                        className="hobby-static-photo"
+                        aria-hidden="true"
+                      >
+                        <HobbyPhotoPanel
+                          photo={photo}
+                          isLoaded={Boolean(loadedPhotoImages[photo.image])}
+                          isCurrent={hobbyIndex === activeHobbyIndex}
+                          onLoad={markPhotoLoaded}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <span className="hobby-click-hint">Scroll photos, swipe sideways for hobbies</span>
             </div>
 
             <div className="hobby-reel-copy">
