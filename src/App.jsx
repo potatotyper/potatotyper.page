@@ -1,22 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
-  Award,
   Briefcase,
-  CalendarDays,
-  CheckCircle2,
   Code,
   ExternalLink,
-  Github,
   GraduationCap,
   Home as HomeIcon,
-  Linkedin,
   Mail,
   Map,
-  MapPin,
   Network,
   Package,
-  Server,
   Wrench,
 } from 'lucide-react'
 import {
@@ -25,6 +18,7 @@ import {
   NavLink,
   Route,
   Routes,
+  useNavigate,
 } from 'react-router-dom'
 import './App.css'
 
@@ -59,61 +53,43 @@ const contactLinks = [
     label: 'LinkedIn',
     value: 'james-johnson-tjhin',
     href: 'https://www.linkedin.com/in/james-johnson-tjhin/',
-    icon: Linkedin,
+    icon: Network,
   },
   {
     label: 'GitHub',
     value: 'potatotyper',
     href: 'https://github.com/potatotyper',
-    icon: Github,
+    icon: Code,
   },
 ]
 
-const highlights = [
-  { value: '42%', label: 'faster story load workflows at SAP' },
-  { value: '58%', label: 'faster private model deletion flow' },
-  { value: '400+', label: 'students supported each term at UBC' },
-  { value: '83-98%', label: 'cache hit rate on LLM prompt matching' },
-]
-
-const experienceItems = [
+const workRecaps = [
   {
-    company: 'SAP',
-    role: 'Software Engineer Intern',
-    team: 'Data Visualization Container Team',
-    location: 'Vancouver, BC',
+    title: 'SAP',
+    subtitle: 'Data Visualization Container Team',
     dates: 'Sep 2025 - Present',
-    bullets: [
-      'Led redesign of story caching workflows, improving load times by up to 42% by reducing metadata calls and improving user-side cache re-persistence logic in JavaScript.',
-      'Increased story loading up to 22% overall and 58% for private model deletion by refactoring APIs and introducing asynchronous job processing.',
-      'Resolved SQL database leaks and dangling references on 60% of team-owned workflows by implementing robust query handling across the Node.js backend.',
-      'Implemented API monitoring with Dynatrace and endpoint stress testing with Apache JMeter.',
-      'Debugged React and Redux issues while adding Jest and Jasmine unit and integration tests.',
-    ],
+    icon: Briefcase,
+    summary:
+      'Working on loading and caching in enterprise analytics. Cut load times up to 42%, improved deletion workflows up to 58%, and fixed SQL leaks across 60% of team-owned workflows.',
+    tags: ['JavaScript', 'React', 'Redux', 'Node.js', 'SQL', 'Dynatrace'],
   },
   {
-    company: 'University of British Columbia',
-    role: 'Lead Teaching Assistant',
-    team: 'CPSC 213, low-level programming',
-    location: 'Vancouver, BC',
+    title: 'UBC',
+    subtitle: 'Lead TA for CPSC 213',
     dates: 'Jan 2025 - Present',
-    bullets: [
-      'Managed a team of 5 teaching assistants developing C, assembly, and multithreading course content.',
-      'Built Bash and Python scripts to collect grades and detect misconduct for over 400 students each term.',
-      'Created auto-graded coding and theory questions for assignments and exams using Python, Docker, and HTML for assembly, C, and Java.',
-    ],
+    icon: GraduationCap,
+    summary:
+      'Teaching low-level programming to 400+ students, covering C, assembly, and multithreading. I also build grading and misconduct-detection automation in Bash and Python.',
+    tags: ['C', 'Assembly', 'Python', 'Docker', 'Bash', 'Teaching'],
   },
   {
-    company: 'Vidio',
-    role: 'Software Engineer Intern',
-    team: 'Discovery Page Team',
-    location: 'Remote',
+    title: 'Vidio',
+    subtitle: 'Discovery Page Team',
     dates: 'May 2024 - Aug 2024',
-    bullets: [
-      'Built a text localization flow between Figma designs and Rails i18n, saving 2+ hours weekly with an automatic translation layer between design and code.',
-      'Saved 3+ hours weekly by developing a Google Cloud Platform tool in Ruby on Rails for batch Drive-to-Cloud-Storage media uploads with Google Sheets logging.',
-      'Created Rails RSpec unit and integration tests, plus end-to-end tests using Selenium.',
-    ],
+    icon: Code,
+    summary:
+      'Built tooling that connected Figma localization to Rails i18n, saving 2+ hours weekly, plus a GCP media upload tool that saved another 3+ hours weekly.',
+    tags: ['Ruby on Rails', 'GCP', 'Figma', 'RSpec', 'Selenium'],
   },
 ]
 
@@ -483,11 +459,11 @@ function SiteShell({ children, variant = 'light' }) {
   return (
     <div className={`site-shell ${variant === 'dark' ? 'site-shell-dark' : ''}`}>
       <header className="site-header">
-        <Link className="brand" to="/" aria-label="PotatoTyper home">
-          PotatoTyper
+        <Link className="brand" to="/" aria-label="Potatotyper landing">
+          Potatotyper
         </Link>
         <nav className="site-nav" aria-label="Primary navigation">
-          <NavLink to="/" end>
+          <NavLink to="/home">
             <HomeIcon size={18} aria-hidden="true" />
             Home
           </NavLink>
@@ -535,212 +511,152 @@ function SectionHeading({ icon: Icon, eyebrow, title, titleId }) {
 function ProfessionalPage() {
   return (
     <SiteShell variant="dark">
-      <section className="professional-page">
-        <section className="professional-intro" aria-labelledby="professional-title">
-          <div className="professional-intro-copy">
-            <p className="professional-eyebrow">CS TA & Software Engineer</p>
-            <h1 id="professional-title">James Johnson Tjhin</h1>
-            <p className="professional-lede">
-              I am studying Computer Science at UBC, teaching low-level
-              programming, and building performant systems at SAP. My work sits
-              around caching, backend reliability, developer tools, and the
-              useful little automations that save teams real time.
-            </p>
-            <div className="professional-contact-list" aria-label="Contact links">
-              {contactLinks.map((link) => (
-                <ContactAction key={link.label} link={link} />
-              ))}
-            </div>
+      <section className="professional-page professional-recap-page">
+        <section className="professional-readme-hero" aria-labelledby="professional-title">
+          <p className="professional-eyebrow">Hello, I am a CS TA & Software Engineer</p>
+          <h1 id="professional-title">James Johnson Tjhin</h1>
+          <p className="professional-lede">
+            Currently teaching and studying Computer Science at UBC and building
+            performant systems at SAP. When I am not coding or teaching
+            low-level programming, I am probably building Minecraft mods or
+            hanging out on my SMP server.
+          </p>
+          <div className="professional-contact-list" aria-label="Contact links">
+            {contactLinks.map((link) => (
+              <ContactAction key={link.label} link={link} />
+            ))}
           </div>
-
-          <aside className="professional-current" aria-label="Current focus">
-            <div>
-              <Briefcase size={18} aria-hidden="true" />
-              <span>SAP Data Visualization Container Team</span>
-            </div>
-            <div>
-              <GraduationCap size={18} aria-hidden="true" />
-              <span>UBC Computer Science, 4.1 GPA</span>
-            </div>
-            <div>
-              <MapPin size={18} aria-hidden="true" />
-              <span>Vancouver, BC</span>
-            </div>
-            <div>
-              <Server size={18} aria-hidden="true" />
-              <span>Minecraft mods and systems projects on the side</span>
-            </div>
-          </aside>
         </section>
 
-        <section className="metric-grid" aria-label="Selected impact">
-          {highlights.map((highlight) => (
-            <div className="metric-card" key={highlight.label}>
-              <strong>{highlight.value}</strong>
-              <span>{highlight.label}</span>
-            </div>
-          ))}
-        </section>
+        <section className="professional-section" aria-labelledby="work-recap-title">
+          <SectionHeading
+            icon={Briefcase}
+            eyebrow="What I have been up to"
+            title="Work Recap"
+            titleId="work-recap-title"
+          />
+          <div className="recap-card-grid">
+            {workRecaps.map((item) => {
+              const Icon = item.icon
 
-        <div className="professional-layout">
-          <div className="professional-main-column">
-            <section className="professional-section" aria-labelledby="experience-title">
-              <SectionHeading
-                icon={Briefcase}
-                eyebrow="Experience"
-                title="Recent Work"
-                titleId="experience-title"
-              />
-              <div className="experience-list">
-                {experienceItems.map((item) => (
-                  <article className="experience-entry" key={item.company}>
-                    <header>
-                      <div>
-                        <h3>{item.company}</h3>
-                        <p>
-                          {item.role}
-                          <span>{item.team}</span>
-                        </p>
-                      </div>
-                      <div className="entry-meta">
-                        <span>
-                          <CalendarDays size={15} aria-hidden="true" />
-                          {item.dates}
-                        </span>
-                        <span>
-                          <MapPin size={15} aria-hidden="true" />
-                          {item.location}
-                        </span>
-                      </div>
-                    </header>
-                    <ul>
-                      {item.bullets.map((bullet) => (
-                        <li key={bullet}>
-                          <CheckCircle2 size={16} aria-hidden="true" />
-                          <span>{bullet}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </article>
-                ))}
-              </div>
-            </section>
-
-            <section className="professional-section" aria-labelledby="projects-title">
-              <SectionHeading icon={Code} eyebrow="Projects" title="Systems & Tools" />
-              <div className="project-grid">
-                {projectItems.map((project) => (
-                  <article className="project-card" key={project.name}>
-                    <header>
-                      <div>
-                        <h3>{project.name}</h3>
-                        <p>{project.stack}</p>
-                      </div>
-                      <a href={project.href} target="_blank" rel="noreferrer">
-                        <Github size={18} aria-hidden="true" />
-                        <span className="sr-only">Open {project.name} on GitHub</span>
-                      </a>
-                    </header>
-                    <ul>
-                      {project.bullets.map((bullet) => (
-                        <li key={bullet}>{bullet}</li>
-                      ))}
-                    </ul>
-                  </article>
-                ))}
-              </div>
-            </section>
-          </div>
-
-          <aside className="professional-side-column">
-            <section className="professional-panel" aria-labelledby="education-title">
-              <SectionHeading
-                icon={GraduationCap}
-                eyebrow="Education"
-                title="University of British Columbia"
-                titleId="education-title"
-              />
-              <div className="education-block">
-                <p>BSc, Computer Science</p>
-                <span>Sep 2023 - Nov 2027</span>
-                <ul>
-                  <li>4.1 GPA</li>
-                  <li>Faculty of Science International Student Scholarship</li>
-                  <li>Charles and Jane Banks Scholarship Award, faculty nominated</li>
-                  <li>Top 1 in Indonesia for Cambridge International AS Level Computer Science</li>
-                </ul>
-              </div>
-            </section>
-
-            <section className="professional-panel" aria-labelledby="skills-title">
-              <SectionHeading icon={Wrench} eyebrow="Technical Skills" title="Stack" />
-              <div className="skill-group-list">
-                {skillGroups.map((group) => (
-                  <div className="skill-group" key={group.label}>
-                    <h3>{group.label}</h3>
+              return (
+                <article className="recap-card" key={item.title}>
+                  <header>
+                    <Icon size={20} aria-hidden="true" />
                     <div>
-                      {group.items.map((skill) => (
-                        <span key={skill}>{skill}</span>
-                      ))}
+                      <h3>{item.title}</h3>
+                      <p>{item.subtitle}</p>
                     </div>
+                    <span>{item.dates}</span>
+                  </header>
+                  <p>{item.summary}</p>
+                  <div className="recap-tags" aria-label={`${item.title} technologies`}>
+                    {item.tags.map((tag) => (
+                      <span key={tag}>{tag}</span>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </section>
+                </article>
+              )
+            })}
+          </div>
+        </section>
 
-            <section className="professional-panel" aria-labelledby="minecraft-title">
-              <SectionHeading
-                icon={Package}
-                eyebrow="Minecraft"
-                title="Mods & Server Projects"
-                titleId="minecraft-title"
-              />
-              <p className="panel-copy">
-                I build server-side Fabric mods and run SMP projects where
-                friends make practical, funny builds, including recreating
-                offices we have worked in.
-              </p>
-              <div className="mod-list">
-                {minecraftMods.map((mod) => (
-                  <a href={mod.href} target="_blank" rel="noreferrer" key={mod.name}>
-                    <span>
-                      <strong>{mod.name}</strong>
-                      {mod.detail}
-                    </span>
-                    <ExternalLink size={16} aria-hidden="true" />
+        <section className="professional-section" aria-labelledby="systems-projects-title">
+          <SectionHeading
+            icon={Code}
+            eyebrow="Projects"
+            title="Systems & Tools"
+            titleId="systems-projects-title"
+          />
+          <div className="project-grid recap-project-grid">
+            {projectItems.map((project) => (
+              <article className="project-card" key={project.name}>
+                <header>
+                  <div>
+                    <h3>{project.name}</h3>
+                    <p>{project.stack}</p>
+                  </div>
+                  <a href={project.href} target="_blank" rel="noreferrer">
+                    <Code size={18} aria-hidden="true" />
+                    <span className="sr-only">Open {project.name} on GitHub</span>
                   </a>
-                ))}
-                <a href="https://modrinth.com/user/potatotyper" target="_blank" rel="noreferrer">
+                </header>
+                <ul>
+                  {project.bullets.slice(0, 2).map((bullet) => (
+                    <li key={bullet}>{bullet}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="professional-section recap-two-column">
+          <div aria-labelledby="minecraft-title">
+            <SectionHeading
+              icon={Package}
+              eyebrow="Minecraft Mods"
+              title="Side Quests"
+              titleId="minecraft-title"
+            />
+            <p className="panel-copy">
+              I love playing Minecraft and occasionally build server-side Fabric
+              mods. My SMP server is where friends make fun builds, including
+              recreating offices we worked in before.
+            </p>
+            <div className="mod-list">
+              {minecraftMods.map((mod) => (
+                <a href={mod.href} target="_blank" rel="noreferrer" key={mod.name}>
                   <span>
-                    <strong>Modrinth</strong>
-                    Browse my public Minecraft mod profile.
+                    <strong>{mod.name}</strong>
+                    {mod.detail}
                   </span>
                   <ExternalLink size={16} aria-hidden="true" />
                 </a>
-              </div>
-            </section>
+              ))}
+              <a href="https://modrinth.com/user/potatotyper" target="_blank" rel="noreferrer">
+                <span>
+                  <strong>Modrinth</strong>
+                  Browse my public Minecraft mod profile.
+                </span>
+                <ExternalLink size={16} aria-hidden="true" />
+              </a>
+            </div>
+          </div>
 
-            <section className="professional-panel compact-panel" aria-label="Awards">
-              <Award size={20} aria-hidden="true" />
-              <p>
-                Faculty-nominated scholarship recipient with national-level
-                Cambridge International AS Level Computer Science recognition.
-              </p>
-            </section>
-          </aside>
-        </div>
+          <div aria-labelledby="skills-title">
+            <SectionHeading
+              icon={Wrench}
+              eyebrow="Tech Stack"
+              title="Tools I Reach For"
+              titleId="skills-title"
+            />
+            <div className="skill-group-list">
+              {skillGroups.map((group) => (
+                <div className="skill-group" key={group.label}>
+                  <h3>{group.label}</h3>
+                  <div>
+                    {group.items.map((skill) => (
+                      <span key={skill}>{skill}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
       </section>
     </SiteShell>
   )
 }
 
+function MinecraftLandingPage() {
+  const navigate = useNavigate()
+
+  return <PanoramaIntro onEnterHome={() => navigate('/home')} />
+}
+
 function HomePage() {
-  const [introComplete, setIntroComplete] = useState(false)
-
-  if (!introComplete) {
-    return <PanoramaIntro onEnterHome={() => setIntroComplete(true)} />
-  }
-
   return (
     <SiteShell>
       <section className="home-brief reveal-content">
@@ -781,7 +697,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<MinecraftLandingPage />} />
+        <Route path="/home" element={<HomePage />} />
         <Route
           path="/professional"
           element={<ProfessionalPage />}
