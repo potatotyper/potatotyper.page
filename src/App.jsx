@@ -143,6 +143,78 @@ const minecraftMods = [
   },
 ]
 
+const featuredProjectSections = [
+  {
+    slug: 'jthreads',
+    title: 'jthreads',
+    eyebrow: 'Threading demo',
+    icon: Code,
+    description:
+      'A threading-focused project with a live demo for exploring the behavior without cloning the repo.',
+    tags: ['C++', 'Threads', 'Demo'],
+    links: [
+      {
+        label: 'GitHub',
+        href: 'https://github.com/potatotyper/jthreads',
+        icon: Code,
+      },
+      {
+        label: 'Live Demo',
+        href: 'https://potatotyper.page/jthreads',
+        icon: ExternalLink,
+      },
+    ],
+  },
+  {
+    slug: 'minecraft-mods',
+    title: 'Minecraft Mods',
+    eyebrow: 'Mod collection',
+    icon: Package,
+    description:
+      'A home for my Minecraft mod work, with source on GitHub and public releases/profile details on Modrinth.',
+    tags: ['Minecraft', 'Fabric', 'Modrinth'],
+    links: [
+      {
+        label: 'Modrinth',
+        href: 'https://modrinth.com/user/potatotyper',
+        icon: Package,
+      },
+      {
+        label: 'GitHub',
+        href: 'https://github.com/potatotyper/minecraft-mods',
+        icon: Code,
+      },
+    ],
+  },
+  {
+    slug: 'streetview',
+    title: 'Minecraft Street View',
+    eyebrow: 'In progress',
+    icon: Map,
+    description:
+      'A street-view style Minecraft project that is still being built out.',
+    tags: ['Minecraft', 'Maps', 'Street View'],
+    warning:
+      'In-progress project. Links will show up here when the first public version is ready.',
+    links: [],
+  },
+]
+
+const otherProjectLinks = [
+  {
+    name: 'cacheoracle-v1',
+    href: 'https://github.com/t-cacheoracle/cacheoracle-v1',
+  },
+  {
+    name: 'Syllabyte',
+    href: 'https://github.com/FabianoGLentini/Syllabyte',
+  },
+  {
+    name: 'twapgame',
+    href: 'https://github.com/potatotyper/twapgame',
+  },
+]
+
 const skillGroups = [
   {
     label: 'Languages',
@@ -576,9 +648,9 @@ function SiteShell({ children, variant = 'light' }) {
             <Briefcase size={18} aria-hidden="true" />
             Professional
           </NavLink>
-          <NavLink to="/street-view">
-            <Map size={18} aria-hidden="true" />
-            Street View
+          <NavLink to="/projects">
+            <Code size={18} aria-hidden="true" />
+            Projects
           </NavLink>
         </nav>
       </header>
@@ -597,6 +669,17 @@ function ContactAction({ link }) {
         <strong>{link.label}</strong>
         {link.value}
       </span>
+    </a>
+  )
+}
+
+function ProjectActionLink({ link }) {
+  const Icon = link.icon
+
+  return (
+    <a className="project-action-link" href={link.href} target="_blank" rel="noreferrer">
+      <Icon size={18} aria-hidden="true" />
+      <span>{link.label}</span>
     </a>
   )
 }
@@ -684,6 +767,22 @@ function ProfessionalPage() {
             titleId="systems-projects-title"
           />
           <div className="project-grid recap-project-grid">
+            <article className="project-card project-demo-card">
+              <header>
+                <div>
+                  <h3>Project Demos</h3>
+                  <p>Live demos and public project links</p>
+                </div>
+                <Link to="/projects">
+                  <ExternalLink size={18} aria-hidden="true" />
+                  <span className="sr-only">Open project demos page</span>
+                </Link>
+              </header>
+              <ul>
+                <li>Try jthreads and browse my Minecraft mod links from one projects hub.</li>
+                <li>Includes the Minecraft Street View status and other project repos.</li>
+              </ul>
+            </article>
             {projectItems.map((project) => (
               <article className="project-card" key={project.name}>
                 <header>
@@ -1283,13 +1382,88 @@ function HomePage() {
   )
 }
 
-function PlaceholderPage({ title, kicker, body }) {
+function ProjectsPage() {
   return (
     <SiteShell>
-      <section className="placeholder-page">
-        <p className="eyebrow">{kicker}</p>
-        <h1>{title}</h1>
-        <p>{body}</p>
+      <section className="projects-page reveal-content">
+        <section className="projects-hero" aria-labelledby="projects-title">
+          <p className="eyebrow">Projects</p>
+          <h1 id="projects-title">Things I am building.</h1>
+          <p className="projects-lede">
+            A quick launchpad for the projects I want people to try first, plus
+            a few other repos worth keeping close by.
+          </p>
+        </section>
+
+        <div className="featured-project-list">
+          {featuredProjectSections.map((project) => {
+            const Icon = project.icon
+            const titleId = `project-${project.slug}-title`
+
+            return (
+              <section
+                className="featured-project-section"
+                aria-labelledby={titleId}
+                key={project.slug}
+              >
+                <div className="featured-project-header">
+                  <span className="featured-project-icon" aria-hidden="true">
+                    <Icon size={24} />
+                  </span>
+                  <div>
+                    <p className="eyebrow">{project.eyebrow}</p>
+                    <h2 id={titleId}>{project.title}</h2>
+                  </div>
+                </div>
+                <p className="featured-project-copy">{project.description}</p>
+                {project.warning && (
+                  <p className="project-warning">
+                    <Wrench size={18} aria-hidden="true" />
+                    <span>{project.warning}</span>
+                  </p>
+                )}
+                <div className="recap-tags" aria-label={`${project.title} tags`}>
+                  {project.tags.map((tag) => (
+                    <span key={tag}>{tag}</span>
+                  ))}
+                </div>
+                {project.links.length > 0 && (
+                  <div className="project-actions" aria-label={`${project.title} links`}>
+                    {project.links.map((link) => (
+                      <ProjectActionLink link={link} key={link.label} />
+                    ))}
+                  </div>
+                )}
+              </section>
+            )
+          })}
+        </div>
+
+        <section className="other-projects-section" aria-labelledby="other-projects-title">
+          <SectionHeading
+            icon={Code}
+            eyebrow="More repos"
+            title="Other Projects"
+            titleId="other-projects-title"
+          />
+          <div className="other-project-grid">
+            {otherProjectLinks.map((project) => (
+              <a
+                className="other-project-link"
+                href={project.href}
+                target="_blank"
+                rel="noreferrer"
+                key={project.name}
+              >
+                <span>
+                  <strong>{project.name}</strong>
+                  GitHub repository
+                </span>
+                <ExternalLink size={17} aria-hidden="true" />
+              </a>
+            ))}
+          </div>
+        </section>
       </section>
     </SiteShell>
   )
@@ -1306,14 +1480,12 @@ function App() {
           element={<ProfessionalPage />}
         />
         <Route
+          path="/projects"
+          element={<ProjectsPage />}
+        />
+        <Route
           path="/street-view"
-          element={
-            <PlaceholderPage
-              title="Street View"
-              kicker="Coming soon"
-              body="This page is reserved for the future street-view experience."
-            />
-          }
+          element={<ProjectsPage />}
         />
       </Routes>
     </BrowserRouter>
