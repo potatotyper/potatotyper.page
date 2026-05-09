@@ -102,7 +102,7 @@ const projectItems = [
   {
     name: 'Generative Cache for LLM',
     stack: 'C++, gRPC, CMake, Python',
-    href: 'https://github.com/potatotyper',
+    href: 'https://github.com/t-cacheoracle/cacheoracle-v1',
     bullets: [
       'Reduced LLM API latency by 34% with a C++ cache based on NeurIPS 2025 research from Microsoft Research.',
       'Reached 83-98% cache hit rates by matching prompts through cosine similarity on sentence-transformer embeddings.',
@@ -112,7 +112,7 @@ const projectItems = [
   {
     name: 'Threadpool with Visualizer',
     stack: 'C++, CMake, React, TypeScript, D3',
-    href: 'https://github.com/potatotyper',
+    href: 'https://github.com/potatotyper/jthreads',
     bullets: [
       'Implemented a C++ threadpool with submit()/shutdown() APIs, std::future results, and timestamped JSON lifecycle tracing.',
       'Visualized task and worker activity as thread swimlanes in React and D3.',
@@ -122,7 +122,7 @@ const projectItems = [
   {
     name: 'Personal Marketplace',
     stack: 'Ruby on Rails, WebSockets, Redis',
-    href: 'https://github.com/potatotyper',
+    href: 'https://github.com/potatotyper/marketplacecopy',
     bullets: [
       'Built a marketplace with OAuth and JWT authentication, real-time WebSocket chat, ActiveRecord data management, and Redis caching.',
     ],
@@ -154,14 +154,14 @@ const featuredProjectSections = [
     tags: ['C++', 'Threads', 'Demo'],
     links: [
       {
-        label: 'GitHub',
-        href: 'https://github.com/potatotyper/jthreads',
-        icon: Code,
-      },
-      {
         label: 'Live Demo',
         href: 'https://potatotyper.page/jthreads',
         icon: ExternalLink,
+      },
+      {
+        label: 'GitHub',
+        href: 'https://github.com/potatotyper/jthreads',
+        icon: Code,
       },
     ],
   },
@@ -194,9 +194,14 @@ const featuredProjectSections = [
     description:
       'A street-view style Minecraft project that is still being built out.',
     tags: ['Minecraft', 'Maps', 'Street View'],
-    warning:
-      'In-progress project. Links will show up here when the first public version is ready.',
-    links: [],
+    warning: 'In-progress project.',
+    links: [
+      {
+        label: 'GitHub',
+        href: 'https://github.com/potatotyper/Minecraft-Street-View',
+        icon: Code,
+      },
+    ],
   },
 ]
 

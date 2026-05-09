@@ -1,3 +1,9 @@
+@font-face {
+  font-family: 'Minecraft';
+  src: url('/assets/fonts/Minecraft.ttf') format('truetype');
+  font-display: swap;
+}
+
 .panorama-intro {
   position: fixed;
   inset: 0;
@@ -52,7 +58,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 0.55rem 1.35rem rgba(0, 0, 0, 0.22);
   backdrop-filter: blur(1.5px);
-  font-family: 'Courier New', 'Lucida Console', monospace;
+  font-family: 'Minecraft', 'Courier New', 'Lucida Console', monospace;
   font-size: clamp(0.98rem, 1.28vw, 1.28rem);
   font-weight: 700;
   line-height: 1.25;
@@ -103,7 +109,7 @@
   padding: 0.34em 0.7em 0.42em;
   color: rgba(255, 255, 255, 0.8);
   background: rgba(52, 55, 60, 0.5);
-  font-family: 'Courier New', 'Lucida Console', monospace;
+  font-family: 'Minecraft', 'Courier New', 'Lucida Console', monospace;
   font-size: clamp(0.9rem, 1.2vw, 1.1rem);
   font-weight: 700;
   letter-spacing: 0;
@@ -1155,8 +1161,12 @@
   background: rgba(223, 241, 220, 0.68);
 }
 
+.featured-project-header .eyebrow {
+  margin-bottom: 0;
+}
+
 .featured-project-header h2 {
-  margin: 0.2rem 0 0;
+  margin: 0;
   color: #142019;
   font-size: clamp(1.55rem, 3vw, 2.35rem);
   line-height: 1.08;
