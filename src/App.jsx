@@ -32,7 +32,6 @@ const MODRINTH_USER = 'potatotyper'
 const MODRINTH_PROFILE_URL = `https://modrinth.com/user/${MODRINTH_USER}`
 const MODRINTH_PROJECTS_ENDPOINT =
   `https://api.modrinth.com/v2/user/${MODRINTH_USER}/projects`
-const MODRINTH_REFRESH_INTERVAL_MS = 60 * 60 * 1000
 const modrinthNumberFormatter = new Intl.NumberFormat('en-US')
 const modrinthTimeFormatter = new Intl.DateTimeFormat('en-US', {
   hour: 'numeric',
@@ -326,6 +325,7 @@ function useModrinthDownloadStats() {
 
       try {
         const response = await fetch(MODRINTH_PROJECTS_ENDPOINT, {
+          cache: 'no-store',
           headers: {
             Accept: 'application/json',
           },
@@ -370,15 +370,10 @@ function useModrinthDownloadStats() {
     }
 
     loadStats()
-    const intervalId = window.setInterval(
-      loadStats,
-      MODRINTH_REFRESH_INTERVAL_MS,
-    )
 
     return () => {
       isMounted = false
       activeController?.abort()
-      window.clearInterval(intervalId)
     }
   }, [])
 
@@ -398,7 +393,7 @@ function getModrinthDownloadCopy(stats) {
   const statusText = stats.error
     ? stats.error
     : stats.updatedAt
-      ? `Updated ${modrinthTimeFormatter.format(stats.updatedAt)}. Refreshes hourly.`
+      ? `Updated ${modrinthTimeFormatter.format(stats.updatedAt)} on page load.`
       : 'Fetching from Modrinth.'
 
   return {
@@ -1410,8 +1405,7 @@ function HomePage() {
             <p>
               I spend a lot of time on my SMP with friends, and I also build
               Minecraft mods for the server rules and quality-of-life tools I
-              want to exist. The downloads here come from my public Modrinth mod
-              projects and refresh automatically.
+              want to exist.
               Message me on LinkedIn to join my server!
             </p>
             <div className="minecraft-server-highlights" aria-label="Minecraft work">
