@@ -28,13 +28,18 @@ const HOBBY_REEL_CENTER_PANEL = 1
 const HOBBY_REEL_SCROLL_SETTLE_MS = 280
 const HOBBY_HORIZONTAL_SWIPE_THRESHOLD = 56
 const HOBBY_HORIZONTAL_SWIPE_DOMINANCE = 1.2
+const MODRINTH_USER = 'potatotyper'
+const MODRINTH_PROFILE_URL = `https://modrinth.com/user/${MODRINTH_USER}`
+const MODRINTH_PROJECTS_ENDPOINT =
+  `https://api.modrinth.com/v2/user/${MODRINTH_USER}/projects`
+const MODRINTH_REFRESH_INTERVAL_MS = 60 * 60 * 1000
+const modrinthNumberFormatter = new Intl.NumberFormat('en-US')
+const modrinthTimeFormatter = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+})
 
 const profileLinks = [
-  {
-    label: 'Modrinth',
-    href: 'https://modrinth.com/user/potatotyper',
-    icon: Package,
-  },
   {
     label: 'GitHub',
     href: 'https://github.com/potatotyper',
@@ -44,6 +49,11 @@ const profileLinks = [
     label: 'LinkedIn',
     href: 'https://www.linkedin.com/in/james-johnson-tjhin/',
     icon: Network,
+  },  
+  {
+    label: 'Modrinth',
+    href: MODRINTH_PROFILE_URL,
+    icon: Package,
   },
 ]
 
@@ -138,8 +148,7 @@ const minecraftMods = [
   {
     name: 'Minecraft Mods Collection',
     href: 'https://github.com/potatotyper/minecraft-mods',
-    detail:
-      'Server-side Fabric mods for shared waypoints, dimension-based Elytra restrictions, and automated server actions.',
+    detail: 'A small collection of server-side Fabric mods for my SMP.',
   },
 ]
 
@@ -176,7 +185,7 @@ const featuredProjectSections = [
     links: [
       {
         label: 'Modrinth',
-        href: 'https://modrinth.com/user/potatotyper',
+        href: MODRINTH_PROFILE_URL,
         icon: Package,
       },
       {
@@ -291,6 +300,152 @@ const hobbyReelItems = [
 ]
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
+
+function useModrinthDownloadStats() {
+  const [stats, setStats] = useState({
+    downloads: null,
+    projectCount: 0,
+    isLoading: true,
+    error: null,
+    updatedAt: null,
+  })
+
+  useEffect(() => {
+    let isMounted = true
+    let activeController = null
+
+    const loadStats = async () => {
+      activeController?.abort()
+      activeController = new AbortController()
+
+      setStats((currentStats) => ({
+        ...currentStats,
+        isLoading: currentStats.downloads === null,
+        error: null,
+      }))
+
+      try {
+        const response = await fetch(MODRINTH_PROJECTS_ENDPOINT, {
+          headers: {
+            Accept: 'application/json',
+          },
+          signal: activeController.signal,
+        })
+
+        if (!response.ok) {
+          throw new Error(`Modrinth returned ${response.status}`)
+        }
+
+        const projects = await response.json()
+
+        if (!Array.isArray(projects)) {
+          throw new Error('Modrinth returned an unexpected response')
+        }
+
+        const modProjects = projects.filter((project) => (
+          project.project_type === 'mod'
+        ))
+        const downloads = modProjects.reduce((total, project) => (
+          total + (Number.isFinite(project.downloads) ? project.downloads : 0)
+        ), 0)
+
+        if (!isMounted) return
+
+        setStats({
+          downloads,
+          projectCount: modProjects.length,
+          isLoading: false,
+          error: null,
+          updatedAt: new Date(),
+        })
+      } catch (error) {
+        if (!isMounted || error.name === 'AbortError') return
+
+        setStats((currentStats) => ({
+          ...currentStats,
+          isLoading: false,
+          error: 'Unable to refresh Modrinth downloads right now.',
+        }))
+      }
+    }
+
+    loadStats()
+    const intervalId = window.setInterval(
+      loadStats,
+      MODRINTH_REFRESH_INTERVAL_MS,
+    )
+
+    return () => {
+      isMounted = false
+      activeController?.abort()
+      window.clearInterval(intervalId)
+    }
+  }, [])
+
+  return stats
+}
+
+function getModrinthDownloadCopy(stats) {
+  const downloadText = stats.downloads === null
+    ? 'Loading'
+    : modrinthNumberFormatter.format(stats.downloads)
+  const projectText = stats.projectCount === 1
+    ? '1 public mod'
+    : `${modrinthNumberFormatter.format(stats.projectCount)} public mods`
+  const summaryText = stats.downloads === null
+    ? 'Fetching public mod projects from Modrinth.'
+    : `${projectText} counted from Modrinth.`
+  const statusText = stats.error
+    ? stats.error
+    : stats.updatedAt
+      ? `Updated ${modrinthTimeFormatter.format(stats.updatedAt)}. Refreshes hourly.`
+      : 'Fetching from Modrinth.'
+
+  return {
+    downloadText,
+    summaryText,
+    statusText,
+  }
+}
+
+function ModrinthDownloadStat({ asLink = false, className = '' }) {
+  const stats = useModrinthDownloadStats()
+  const { downloadText, summaryText, statusText } = getModrinthDownloadCopy(stats)
+  const statClassName = ['modrinth-download-stat', className]
+    .filter(Boolean)
+    .join(' ')
+  const content = (
+    <>
+      <span className="modrinth-download-kicker">
+        <Package size={18} aria-hidden="true" />
+        Mod downloads
+      </span>
+      <strong aria-live="polite">{downloadText}</strong>
+      <span>{summaryText}</span>
+      <small>{statusText}</small>
+    </>
+  )
+
+  if (asLink) {
+    return (
+      <a
+        className={statClassName}
+        href={MODRINTH_PROFILE_URL}
+        target="_blank"
+        rel="noreferrer"
+      >
+        {content}
+        <ExternalLink className="modrinth-download-external" size={16} aria-hidden="true" />
+      </a>
+    )
+  }
+
+  return (
+    <div className={statClassName}>
+      {content}
+    </div>
+  )
+}
 
 function PanoramaIntro({ onEnterHome }) {
   const mountRef = useRef(null)
@@ -819,11 +974,11 @@ function ProfessionalPage() {
               titleId="minecraft-title"
             />
             <p className="panel-copy">
-              I love playing Minecraft and occasionally build server-side Fabric
-              mods. My SMP server is where friends make fun builds, including
-              recreating offices we worked in before.
+              Minecraft projects I keep tinkering with outside work, from SMP
+              builds to small Fabric mods.
             </p>
             <div className="mod-list">
+              <ModrinthDownloadStat asLink className="professional-modrinth-stat" />
               {minecraftMods.map((mod) => (
                 <a href={mod.href} target="_blank" rel="noreferrer" key={mod.name}>
                   <span>
@@ -833,13 +988,6 @@ function ProfessionalPage() {
                   <ExternalLink size={16} aria-hidden="true" />
                 </a>
               ))}
-              <a href="https://modrinth.com/user/potatotyper" target="_blank" rel="noreferrer">
-                <span>
-                  <strong>Modrinth</strong>
-                  Browse my public Minecraft mod profile.
-                </span>
-                <ExternalLink size={16} aria-hidden="true" />
-              </a>
             </div>
           </div>
 
@@ -1224,7 +1372,6 @@ function HomePage() {
 
     return `translate3d(calc(-100% + ${hobbyDragOffset}px), 0, 0)`
   })()
-
   return (
     <SiteShell>
       <div className="home-page reveal-content">
@@ -1237,47 +1384,69 @@ function HomePage() {
               alt="James Johnson Tjhin profile photo"
               loading="eager"
             />
-            <h1>Hi, I'm James.</h1>
-            <p className="brief-copy">
-              This is a starter home for my hobbies, projects, and experiments.
-              More always on the way!
-            </p>
-          </div>
-          <div className="profile-links" aria-label="Profile links">
-            {profileLinks.map(({ label, href, icon: Icon }) => (
-              <a key={label} href={href} target="_blank" rel="noreferrer">
-                <Icon size={20} aria-hidden="true" />
-                {label}
-                <ExternalLink size={16} aria-hidden="true" />
-              </a>
-            ))}
+            <div className="title-stack">
+              <h1>Hi, I'm James.</h1>
+              <p className="brief-copy">
+                This is a starter home for my hobbies, projects, and experiments.
+                More always on the way!
+              </p>
+              <div className="profile-links" aria-label="Profile links">
+                {profileLinks.map(({ label, href, icon: Icon }) => (
+                  <a key={label} href={href} target="_blank" rel="noreferrer">
+                    <Icon size={20} aria-hidden="true" />
+                    {label}
+                    <ExternalLink size={16} aria-hidden="true" />
+                  </a>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
-        <section className="minecraft-server-section">
+        <section className="minecraft-server-section" aria-labelledby="minecraft-title">
           <div className="minecraft-server-copy">
-            <p className="eyebrow">Minecraft SMP</p>
-            <h2>Come see the server builds.</h2>
+            <p className="eyebrow">Minecraft SMP + Mods</p>
+            <h2 id="minecraft-title">Servers, Fabric mods, and small useful experiments.</h2>
             <p>
-              I spend a lot of time on my SMP server with friends. We make fun
-              builds, including trying to rebuild offices we worked in before.
-              If that sounds like your kind of chaos, DM me on LinkedIn to join.
+              I spend a lot of time on my SMP with friends, and I also build
+              Minecraft mods for the server rules and quality-of-life tools I
+              want to exist. The downloads here come from my public Modrinth mod
+              projects and refresh automatically.
+              Message me on LinkedIn to join my server!
             </p>
+            <div className="minecraft-server-highlights" aria-label="Minecraft work">
+              <span>SMP builds with friends</span>
+              <span>Fabric server-side mods</span>
+              <span>Public Modrinth releases</span>
+            </div>
           </div>
-          <div className="minecraft-server-actions">
-            <a
-              className="minecraft-server-link"
-              href="https://www.linkedin.com/in/james-johnson-tjhin/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Network size={20} aria-hidden="true" />
-              Message me on LinkedIn
-              <ExternalLink size={16} aria-hidden="true" />
-            </a>
-            <Link className="minecraft-server-link is-secondary" to="/">
-              View Panorama
-            </Link>
+          <div className="minecraft-server-side">
+            <ModrinthDownloadStat />
+            <div className="minecraft-server-actions">
+              <a
+                className="minecraft-server-link"
+                href={MODRINTH_PROFILE_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Package size={20} aria-hidden="true" />
+                View Modrinth
+                <ExternalLink size={16} aria-hidden="true" />
+              </a>
+              <Link className="minecraft-server-link is-secondary" to="/">
+                View Panorama
+              </Link>
+              <a
+                className="minecraft-server-link is-secondary"
+                href="https://www.linkedin.com/in/james-johnson-tjhin/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Network size={20} aria-hidden="true" />
+                SMP Invite
+                <ExternalLink size={16} aria-hidden="true" />
+              </a>
+            </div>
           </div>
         </section>
 
